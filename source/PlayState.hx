@@ -310,6 +310,8 @@ class PlayState extends MusicBeatState
 	var chromIsSoAngyRnSaveMeLol:Float = 0;
 
 	var vignette:FlxSprite;
+	
+	var reanimatedbfOn:Bool = ClientPrefs.reanimatedbf;
 	override public function create()
 	{
 		if (curSong.toLowerCase() == 'stickin to it')
@@ -326,6 +328,13 @@ class PlayState extends MusicBeatState
 
 		if (SONG.song.toLowerCase() == 'vengeance') {
 			health = 2; 
+		}
+		if (curSong.toLowerCase() == 'chosen') {
+			FlxG.save.data.framerate = 240;
+			FlxG.updateFramerate = 240;
+		}else{ 
+			FlxG.save.data.framerate = 	ClientPrefs.framerate;
+			FlxG.updateFramerate = ClientPrefs.framerate;
 		}
 
 		setChrome(0.0);
@@ -786,9 +795,42 @@ class PlayState extends MusicBeatState
 					trace(SONG.song.toLowerCase());
 				}
 			case 'tdl':
+				#if PRELOAD_ALL			
+				var images = [];
+				var xml = [];
+				trace("caching images...");
+	
+				for (i in FileSystem.readDirectory(FileSystem.absolutePath("assets/shared/images/characters/animation/")))
+				{
+					if (!i.endsWith(".png"))
+						continue;
+					images.push(i);
+	
+					if (!i.endsWith(".xml"))
+						continue;
+					xml.push(i);
+				}
+				for (i in images)
+				{
+					var replaced = i.replace(".png","");
+					FlxG.bitmap.add(Paths.image("characters/animation/" + replaced,"shared"));
+					trace("this is " + replaced);
+				}
+			
+			for (i in xml)
+				{
+					var replaced = i.replace(".xml","");
+					FlxG.bitmap.add(Paths.image("characters/animation/" + replaced,"shared"));
+					trace("this is " + replaced);
+				}
+			#end
+			
 				var bg:BGSprite = new BGSprite('tdl_bg', 0, 0, 1, 1);
 				bg.screenCenter();
 				bg.x += 75;
+				add(bg);
+				remove(bg);
+
 				add(bg);
 			case 'animatedbg':
 
@@ -813,6 +855,8 @@ class PlayState extends MusicBeatState
 				//animatedbg.screenCenter();
 				animatedbg.y -= 350;
 				animatedbg.x -= 600;
+				add(animatedbg);
+				remove(animatedbg);
 
 				backdudes = new BGSprite('YellowBlueGreen', -400, 400, 0.9, 0.9, ['Back instance 1']);
 				backdudes.updateHitbox();
@@ -832,10 +876,21 @@ class PlayState extends MusicBeatState
 					animatedbg = new BGSprite('animatedbg', -500, -500, 0, 0);
 					animatedbg.scale.set(1.5, 1.5);
 					animatedbg.screenCenter();
+					add(animatedbg);
+					remove(animatedbg);
+				}
+
+				if(ClientPrefs.lowQuality) {
+					animatedbg = new BGSprite('animatedbg', -500, -500, 0, 0);
+					animatedbg.scale.set(1.5, 1.5);
+					animatedbg.screenCenter();
+					add(animatedbg);
+					remove(animatedbg);
 				}
 				
 				add(animatedbg);
 				add(backdudes);
+				add(frontdudes);
 		}
 
 		if(isPixelStage) {
@@ -971,7 +1026,10 @@ class PlayState extends MusicBeatState
 		dadGroup.add(dad);
 		startCharacterLua(dad.curCharacter);
 
-		boyfriend = new Boyfriend(0, 0, SONG.player1);
+		if (reanimatedbfOn)
+			boyfriend = new Boyfriend(0, 0, 'bf-reanimated');
+		else
+			boyfriend = new Boyfriend(0, 0, SONG.player1);
 		startCharacterPos(boyfriend);
 		boyfriendGroup.add(boyfriend);
 		startCharacterLua(boyfriend.curCharacter);
@@ -2361,11 +2419,12 @@ class PlayState extends MusicBeatState
 				spr.x -= 1000;
 			});
 
-			if (FlxG.keys.justPressed.SPACE)
+			if (FlxG.keys.justPressed.SPACE && canDodge)
 				{
 					boyfriend.playAnim('dodge', true);
-					new FlxTimer().start(0.2, function(tmr:FlxTimer) {
+					new FlxTimer().start(0.1, function(tmr:FlxTimer) {
 						dodged = false;
+						canDodge = false;
 					});
 				}
 		}
@@ -3462,13 +3521,6 @@ class PlayState extends MusicBeatState
 
 		setChrome(0.0);
 
-		if (FlxG.save.data.socialCredits != null) {
-			socialCredits = FlxG.save.data.socialCredits;
-		}
-
-		if (FlxG.save.data.sugomaBalls != null) {
-			sugomaBalls = FlxG.save.data.sugomaBalls;
-		}
 
 		if (SONG.song.toLowerCase() == 'stickin to it')
 		{
@@ -3481,25 +3533,6 @@ class PlayState extends MusicBeatState
 				socialCredits += 1;
 				trace('the j');
 			}
-
-		if (socialCredits >=  2)
-		{
-			socialCredits = 2; 
-		}
-
-		if (socialCredits ==  1)
-		{
-			FlxG.save.data.socialCredits = socialCredits;
-			FlxG.save.flush();
-			trace('the j');
-		}
-
-		if (socialCredits ==  2)
-		{
-			FlxG.save.data.socialCredits = socialCredits;
-			FlxG.save.flush();
-			trace('the h');
-		}
 
 		#if ACHIEVEMENTS_ALLOWED
 		if(achievementObj != null) {
@@ -3605,45 +3638,41 @@ class PlayState extends MusicBeatState
 			}
 			else
 			{
-				if (SONG.song.toLowerCase() == 'stickin to it' && FlxG.save.data.socialCredits == 2)
+				if (SONG.song.toLowerCase() == 'stickin to it')
 					{
-						FlxG.sound.playMusic(Paths.music('freakyMenu'));
-
-						FlxG.save.data.sugomaBalls = sugomaBalls;
+						FlxG.save.data.beatStickin = true;
 						FlxG.save.flush();
 
-						if (FlxG.save.data.sugomaBalls == true) {
-							MusicBeatState.switchState(new MainMenuState());
-						} else {
+						FlxG.sound.playMusic(Paths.music('freakyMenu'));
+
+						if (FlxG.save.data.beatStickin && FlxG.save.data.beatBlue && !FlxG.save.data.unlockedSecret){
 							MusicBeatState.switchState(new HintState());
-						}
-
-						trace('hints where');
-					} else if (SONG.song.toLowerCase() == 'stickin to it' && FlxG.save.data.socialCredits < 2) {
-						MusicBeatState.switchState(new MainMenuState());
-						trace('lol you need 2 points');
-					}		
-					if (SONG.song.toLowerCase() == 'blues groove' && FlxG.save.data.socialCredits == 2)
-					{
-							FlxG.sound.playMusic(Paths.music('freakyMenu'));
-
-							FlxG.save.data.sugomaBalls = sugomaBalls;
+							FlxG.save.data.unlockedSecret =true;
 							FlxG.save.flush();
+						} else {
+							MusicBeatState.switchState(new MainMenuState());
+						}
+					}		
+					if (SONG.song.toLowerCase() == 'blues groove')
+					{
+						FlxG.save.data.beatBlue = true;
+						FlxG.save.flush();
 
-							if (FlxG.save.data.sugomaBalls == true) {
-								MusicBeatState.switchState(new MainMenuState());
-								trace('hints where');
-							} else {
-								MusicBeatState.switchState(new HintState());
-							}
-					} else if (SONG.song.toLowerCase() == 'blues groove' && FlxG.save.data.socialCredits < 2) {
-						MusicBeatState.switchState(new MainMenuState());
-						trace('lol you need 2 points');
+						FlxG.sound.playMusic(Paths.music('freakyMenu'));
+
+						if (FlxG.save.data.beatStickin && FlxG.save.data.beatBlue && !FlxG.save.data.unlockedSecret){
+							MusicBeatState.switchState(new HintState());
+							FlxG.save.data.unlockedSecret =true;
+							FlxG.save.flush();
+						} else {
+							MusicBeatState.switchState(new MainMenuState());
+						}
 					}
+
 					if (SONG.song.toLowerCase() == 'chosen') {
 						MusicBeatState.switchState(new MainMenuState());
 					}
-					if (SONG.song.toLowerCase() == 'make some noise') {
+					if (SONG.song.toLowerCase() == 'vengeance') {
 						MusicBeatState.switchState(new MainMenuState());
 					}
 				trace('WENT BACK TO FREEPLAY??');
@@ -4214,23 +4243,27 @@ class PlayState extends MusicBeatState
 		dodged = false;
 		attacking=true;	
 		warning();
-		new FlxTimer().start(0.45, function(bozo:FlxTimer){
-			FlxG.sound.play(Paths.sound('darkLordAttack'));
-			dad.playAnim("attack",true);
-			dad.specialAnim = true;
-			if(!dodged) {
-				FlxG.camera.shake(0.05, 0.05);
-				health = 0;
-				trace("L bozo");
-				dodged=false;
-			} else {
-				boyfriend.playAnim('dodge');
-				dodged =false;
-				attacking = false;
-				health += 0.6;
-			}
+		new FlxTimer().start(0.2, function(A:FlxTimer) {
+			warning();
+			new FlxTimer().start(0.45, function(bozo:FlxTimer){
+				FlxG.sound.play(Paths.sound('darkLordAttack'));
+				dad.playAnim("attack",true);
+				dad.specialAnim = true;
+				if(!dodged) {
+					FlxG.camera.shake(0.05, 0.05);
+					health = 0;
+					trace("L bozo");
+					dodged=false;
+				} else {
+					boyfriend.playAnim('dodge');
+					dodged =false;
+					attacking = false;
+					health += 0.6;
+				}
+			});
 		});
 	}
+
 	function warning()
 	{
 		FlxG.sound.play(Paths.sound('alert'));
@@ -4914,14 +4947,14 @@ class PlayState extends MusicBeatState
 				}
 
 			case 'alan':
-				if(!ClientPrefs.lowQuality) {
-					theBois.dance(true);
+				if(ClientPrefs.lowQuality) {
+					remove(theBois);
 				}
 
 			case 'animatedbg':
-				if(!ClientPrefs.lowQuality) {
-					backdudes.dance(true);
-					frontdudes.dance(true);
+				if(ClientPrefs.lowQuality) {
+					remove(backdudes);
+					remove(frontdudes);
 				}
 				
 

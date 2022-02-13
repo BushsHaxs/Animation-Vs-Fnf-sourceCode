@@ -351,9 +351,11 @@ class MainMenuState extends MusicBeatState
 
 		if (FlxG.keys.justPressed.THREE)
 		{
-			trace('Social Credits: ' + FlxG.save.data.socialCredits);
+			FlxG.save.data.unlockedSecret = false;
+			FlxG.save.data.beatStickin = false;
+			FlxG.save.data.beatBlue = false;
+			trace('Social Credits: ' + FlxG.save.data.unlockedSecret);
 			trace('Curselected: ' + curSelected);
-			trace('Balls: ' + FlxG.save.data.sugomaBalls);
 		}
 
 		#if debug
@@ -478,14 +480,14 @@ class MainMenuState extends MusicBeatState
 		if (curSelected > 3) {
             curSelected = 0;
 		}
-		if (curSelected > 2 && FlxG.save.data.socialCredits < 2) {
+		if (curSelected > 2 && FlxG.save.data.unlockedSecret ==false) {
 			curSelected = 0;
-		} else if (curSelected > 2 && FlxG.save.data.socialCredits == 2) {
+		} else if (curSelected > 2 && FlxG.save.data.unlockedSecret ==true) {
 			curSelected = 3;
 		}
-		if (curSelected < 0 && FlxG.save.data.socialCredits < 2) {
+		if (curSelected < 0 && FlxG.save.data.unlockedSecret ==false) {
 			curSelected = 2;
-		} else if (curSelected < 0 && FlxG.save.data.socialCredits == 2) {
+		} else if (curSelected < 0 && FlxG.save.data.unlockedSecret ==true) {
 			curSelected = 3;
 		}
 		if (curSelected >= menuItems.length)
