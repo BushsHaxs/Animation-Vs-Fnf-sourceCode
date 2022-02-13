@@ -823,10 +823,10 @@ class PlayState extends MusicBeatState
 				frontdudes.updateHitbox();
 				add(frontdudes);
 				remove(frontdudes);
-				
+				#if window
 				var video:MP4Handler = new MP4Handler();
 				video.playMP4(Paths.video('animatedbg'), null, animatedbg);
-
+                                #end
 				if (animatedbgdisable == true)
 				{
 					animatedbg = new BGSprite('animatedbg', -500, -500, 0, 0);
